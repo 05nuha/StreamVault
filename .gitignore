@@ -2,6 +2,7 @@ target/
 *.class
 *.war
 *.jar
+src/main/resources/db.properties
 .idea/
 *.iml
 .vscode/
