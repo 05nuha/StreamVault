@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 // handles login and registration logic for users
 public class AuthService {
@@ -34,24 +35,38 @@ public class AuthService {
         return false;
     }
 
-    // registers a new user into the Users table
+    // registers a new user into Users and Subscriptions tables
     // password is hashed using BCrypt before storing
-    public static void register(String name, String email, String pw, String country) {
+    public static void register(String name, String email, String pw, String country, int planId) {
         // hash the password with cost factor 12 before storing
         String hash = BCrypt.hashpw(pw, BCrypt.gensalt(12));
 
-        String sql = "INSERT INTO Users(full_name, email, password, country) VALUES(?, ?, ?, ?)";
+        String insertUser = "INSERT INTO Users(full_name, email, password, country) VALUES(?, ?, ?, ?)";
+        String insertSub  = "INSERT INTO Subscriptions(user_id, plan_id, status, start_date, auto_renew) VALUES(?, ?, 'active', CURRENT_DATE, TRUE)";
 
-        try (Connection c = DatabaseConnection.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        try (Connection c = DatabaseConnection.getConnection()) {
 
-            ps.setString(1, name);
-            ps.setString(2, email);
-            ps.setString(3, hash);
-            ps.setString(4, country);
-            ps.executeUpdate();
+            // insert the user and get the auto-generated user_id back
+            PreparedStatement psUser = c.prepareStatement(insertUser, Statement.RETURN_GENERATED_KEYS);
+            psUser.setString(1, name);
+            psUser.setString(2, email);
+            psUser.setString(3, hash);
+            psUser.setString(4, country);
+            psUser.executeUpdate();
 
-            System.out.println("User registered: " + email);
+            // grab the new user_id so we can link the subscription to it
+            ResultSet keys = psUser.getGeneratedKeys();
+            if (keys.next()) {
+                int userId = keys.getInt(1);
+
+                // insert the subscription for the chosen plan
+                PreparedStatement psSub = c.prepareStatement(insertSub);
+                psSub.setInt(1, userId);
+                psSub.setInt(2, planId);
+                psSub.executeUpdate();
+
+                System.out.println("User registered: " + email + " with plan " + planId);
+            }
 
         } catch (SQLException e) {
             e.printStackTrace();

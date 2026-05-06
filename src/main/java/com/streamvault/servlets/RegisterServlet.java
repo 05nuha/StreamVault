@@ -25,13 +25,14 @@ public class RegisterServlet extends HttpServlet {
             throws ServletException, IOException {
 
         // get all the form fields
-        String name = req.getParameter("name");
-        String email = req.getParameter("email");
+        String name     = req.getParameter("name");
+        String email    = req.getParameter("email");
         String password = req.getParameter("password");
-        String country = req.getParameter("country");
+        String country  = req.getParameter("country");
+        int    planId   = Integer.parseInt(req.getParameter("plan"));
 
-        // call AuthService to register the user
-        AuthService.register(name, email, password, country);
+        // call AuthService to register the user and create their subscription
+        AuthService.register(name, email, password, country, planId);
 
         // redirect to login page after successful registration
         res.sendRedirect("login.html?registered=1");
