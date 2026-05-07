@@ -9,3 +9,4 @@ src/main/resources/db.properties
 .settings/
 .classpath
 .project
+.claude/

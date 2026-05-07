@@ -13,8 +13,8 @@
     <name>StreamVault Phase 4</name>
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -48,9 +48,17 @@
             <version>3.0.0</version>
             <scope>provided</scope>
         </dependency>
+
+        <!-- MongoDB Java Driver -->
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-sync</artifactId>
+            <version>4.11.1</version>
+        </dependency>
     </dependencies>
 
     <build>
+        <finalName>streamvault</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

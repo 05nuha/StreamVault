@@ -44,28 +44,27 @@ public class AuthService {
         String insertUser = "INSERT INTO Users(full_name, email, password, country) VALUES(?, ?, ?, ?)";
         String insertSub  = "INSERT INTO Subscriptions(user_id, plan_id, status, start_date, auto_renew) VALUES(?, ?, 'active', CURRENT_DATE, TRUE)";
 
-        try (Connection c = DatabaseConnection.getConnection()) {
+        try (Connection c = DatabaseConnection.getConnection();
+             PreparedStatement psUser = c.prepareStatement(insertUser, Statement.RETURN_GENERATED_KEYS)) {
 
-            // insert the user and get the auto-generated user_id back
-            PreparedStatement psUser = c.prepareStatement(insertUser, Statement.RETURN_GENERATED_KEYS);
             psUser.setString(1, name);
             psUser.setString(2, email);
             psUser.setString(3, hash);
             psUser.setString(4, country);
             psUser.executeUpdate();
 
-            // grab the new user_id so we can link the subscription to it
-            ResultSet keys = psUser.getGeneratedKeys();
-            if (keys.next()) {
-                int userId = keys.getInt(1);
+            try (ResultSet keys = psUser.getGeneratedKeys()) {
+                if (keys.next()) {
+                    int userId = keys.getInt(1);
 
-                // insert the subscription for the chosen plan
-                PreparedStatement psSub = c.prepareStatement(insertSub);
-                psSub.setInt(1, userId);
-                psSub.setInt(2, planId);
-                psSub.executeUpdate();
+                    try (PreparedStatement psSub = c.prepareStatement(insertSub)) {
+                        psSub.setInt(1, userId);
+                        psSub.setInt(2, planId);
+                        psSub.executeUpdate();
+                    }
 
-                System.out.println("User registered: " + email + " with plan " + planId);
+                    System.out.println("User registered: " + email + " with plan " + planId);
+                }
             }
 
         } catch (SQLException e) {

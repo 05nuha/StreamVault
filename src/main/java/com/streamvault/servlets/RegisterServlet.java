@@ -28,13 +28,18 @@ public class RegisterServlet extends HttpServlet {
         String name     = req.getParameter("name");
         String email    = req.getParameter("email");
         String password = req.getParameter("password");
-        String country  = req.getParameter("country");
-        int    planId   = Integer.parseInt(req.getParameter("plan"));
+        String country = req.getParameter("country");
+        int planId;
+        try {
+            planId = Integer.parseInt(req.getParameter("plan"));
+        } catch (NumberFormatException e) {
+            planId = 1; // default plan if none was provided
+        }
 
         // call AuthService to register the user and create their subscription
         AuthService.register(name, email, password, country, planId);
 
         // redirect to login page after successful registration
-        res.sendRedirect("login.html?registered=1");
+        res.sendRedirect(req.getContextPath() + "/login.html?registered=1");
     }
 }

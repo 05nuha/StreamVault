@@ -6,22 +6,22 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
 
-// This class handles the connection to our MySQL database
+// reads db.url, db.user, db.password from db.properties and opens connections
 public class DatabaseConnection {
 
     private static final String URL;
     private static final String USER;
     private static final String PASS;
 
-    // load connection details from db.properties at class startup
+    // runs once when the class is first used, loads the properties file
     static {
-        try {
+        try (InputStream in = DatabaseConnection.class.getClassLoader().getResourceAsStream("db.properties")) {
+            if (in == null) {
+                throw new RuntimeException("Could not find db.properties on the classpath");
+            }
             Properties props = new Properties();
-            InputStream in = DatabaseConnection.class
-                    .getClassLoader()
-                    .getResourceAsStream("db.properties");
             props.load(in);
-            URL  = props.getProperty("db.url");
+            URL = props.getProperty("db.url");
             USER = props.getProperty("db.user");
             PASS = props.getProperty("db.password");
         } catch (Exception e) {
@@ -29,10 +29,9 @@ public class DatabaseConnection {
         }
     }
 
-    // returns a connection to the streamvault database
     public static Connection getConnection() throws SQLException {
         try {
-            // explicitly load the MySQL driver - needed for Tomcat's class loader
+            // without this Tomcat cant find the MySQL driver at runtime
             Class.forName("com.mysql.cj.jdbc.Driver");
         } catch (ClassNotFoundException e) {
             throw new SQLException("MySQL driver not found", e);
