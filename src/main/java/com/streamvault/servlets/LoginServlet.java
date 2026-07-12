@@ -1,6 +1,5 @@
 package com.streamvault.servlets;
 
-import com.streamvault.db.DatabaseConnection;
 import com.streamvault.services.AuthService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -10,9 +9,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 
 @WebServlet("/login")
 public class LoginServlet extends HttpServlet {
@@ -31,12 +27,17 @@ public class LoginServlet extends HttpServlet {
         String password = req.getParameter("password");
         String ctx      = req.getContextPath();
 
-        if (AuthService.login(email, password)) {
-            HttpSession session = req.getSession();
-            session.setAttribute("user", email);
+        // one query verifies the credentials and fetches the role
+        String role = AuthService.authenticate(email, password);
 
-            // check role and redirect to the right page
-            String role = fetchRole(email);
+        if (role != null) {
+            // rotate the session id on login to prevent session fixation
+            HttpSession oldSession = req.getSession(false);
+            if (oldSession != null) {
+                oldSession.invalidate();
+            }
+            HttpSession session = req.getSession(true);
+            session.setAttribute("user", email);
             session.setAttribute("role", role);
 
             if ("admin".equals(role)) {
@@ -49,19 +50,5 @@ public class LoginServlet extends HttpServlet {
         } else {
             res.sendRedirect(ctx + "/login.html?error=1");
         }
-    }
-
-    private String fetchRole(String email) {
-        String sql = "SELECT role FROM Users WHERE email = ?";
-        try (Connection c = DatabaseConnection.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setString(1, email);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                String r = rs.getString("role");
-                return r != null ? r : "viewer";
-            }
-        } catch (Exception ignored) {}
-        return "viewer";
     }
 }
