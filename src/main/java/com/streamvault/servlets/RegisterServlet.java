@@ -1,6 +1,7 @@
 package com.streamvault.servlets;
 
 import com.streamvault.services.AuthService;
+import com.streamvault.services.ValidationUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -24,11 +25,12 @@ public class RegisterServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse res)
             throws ServletException, IOException {
 
-        // get all the form fields
         String name     = req.getParameter("name");
         String email    = req.getParameter("email");
         String password = req.getParameter("password");
-        String country = req.getParameter("country");
+        String country  = req.getParameter("country");
+        String ctx      = req.getContextPath();
+
         int planId;
         try {
             planId = Integer.parseInt(req.getParameter("plan"));
@@ -36,10 +38,19 @@ public class RegisterServlet extends HttpServlet {
             planId = 1; // default plan if none was provided
         }
 
-        // call AuthService to register the user and create their subscription
-        AuthService.register(name, email, password, country, planId);
+        // validate before touching the database so the user gets a clear error
+        if (!ValidationUtil.isValidName(name)
+                || !ValidationUtil.isValidEmail(email)
+                || !ValidationUtil.isValidPassword(password)) {
+            res.sendRedirect(ctx + "/register.html?error=invalid");
+            return;
+        }
 
-        // redirect to login page after successful registration
-        res.sendRedirect(req.getContextPath() + "/login.html?registered=1");
+        if (AuthService.register(name, email, password, country, planId)) {
+            res.sendRedirect(ctx + "/login.html?registered=1");
+        } else {
+            // most commonly the email is already registered
+            res.sendRedirect(ctx + "/register.html?error=taken");
+        }
     }
 }
